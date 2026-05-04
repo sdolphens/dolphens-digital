@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, PhoneOff, MessageSquare, Calendar, BarChart3, Clock } from "lucide-react";
+import LeadQualificationForm from "@/components/LeadQualificationForm";
 
 export default function Home() {
+  const [formOpen, setFormOpen] = useState(false);
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Navigation */}
@@ -37,7 +40,7 @@ export default function Home() {
               <p className="text-xl text-foreground/80 mb-8 leading-relaxed">
                 Dolphens Digital builds AI employees that automatically engage every missed lead, book more appointments, and grow your local business 24/7.
               </p>
-              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6 rounded-lg">
+              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6 rounded-lg" onClick={() => setFormOpen(true)}>
                 Get Your Free AI Profit Audit
               </Button>
               <p className="text-sm text-foreground/60 mt-4">✓ No credit card required • Takes 5 minutes</p>
@@ -203,7 +206,7 @@ export default function Home() {
           <p className="text-xl mb-8 opacity-90">
             Stop letting valuable leads slip away. Let Dolphens Digital empower your business with intelligent AI automation.
           </p>
-          <Button size="lg" variant="secondary" className="text-lg px-8 py-6 rounded-lg">
+          <Button size="lg" variant="secondary" className="text-lg px-8 py-6 rounded-lg" onClick={() => setFormOpen(true)}>
             Schedule Your Free AI Profit Audit Now!
           </Button>
         </div>
@@ -246,6 +249,9 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Lead Qualification Form Modal */}
+      <LeadQualificationForm open={formOpen} onOpenChange={setFormOpen} />
     </div>
   );
 }
