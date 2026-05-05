@@ -7,6 +7,18 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, CheckCircle2, ArrowRight } from "lucide-react";
 import { calculateProfitLoss, INDUSTRY_BENCHMARKS, ProfitCalculation } from "@/lib/profitCalculator";
+
+// Map display names to benchmark keys
+const INDUSTRY_NAME_TO_KEY: Record<string, string> = {
+  "Plumbing": "plumbing",
+  "HVAC": "hvac",
+  "Electrical": "electrical",
+  "Dental": "dental",
+  "Real Estate": "realEstate",
+  "Law Firm": "lawFirm",
+  "Roofing": "roofing",
+  "Home Services": "homeServices"
+};
 import ProfitAuditResults from "./ProfitAuditResults";
 
 // Initialize EmailJS
@@ -67,7 +79,7 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
     const missRate = userMissRate ? parseInt(userMissRate) : 50; // Default to 50% if not provided
 
     // Calculate profit loss
-    const businessTypeKey = formData.businessType.toLowerCase().replace(/\s+/g, "");
+    const businessTypeKey = INDUSTRY_NAME_TO_KEY[formData.businessType] || formData.businessType.toLowerCase().replace(/\s+/g, "");
     const result = calculateProfitLoss(businessTypeKey, estimatedCalls, missRate);
 
     if (result) {
@@ -118,7 +130,7 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
       
       setIsSuccess(true);
       
-      // Reset after 3 seconds
+      // Reset after 5 seconds (gives users time to see success message)
       setTimeout(() => {
         setIsSuccess(false);
         setFormData({
@@ -134,7 +146,7 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
         setCalculation(null);
         setUserMissRate("");
         onOpenChange(false);
-      }, 3000);
+      }, 5000);
     } catch (error) {
       console.error("Error sending email:", error);
       alert("Failed to submit. Please try again.");
