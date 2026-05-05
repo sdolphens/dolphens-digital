@@ -258,19 +258,11 @@ New Lead Submission from Dolphens Digital\n\n=== BUSINESS INFO ===\nBusiness Nam
             </DialogHeader>
             <ProfitAuditResults
               calculation={calculation}
-              onBookCall={() => {
-                // Move to booking step
-                setShowCalculator(false);
-              }}
+              onBookCall={() => {}}
             />
             <div className="mt-6 pt-6 border-t border-border space-y-3">
-              <Button
-                onClick={handleShowCalculator}
-                variant="outline"
-                className="w-full"
-              >
-                Back to Edit
-              </Button>
+              <h3 className="text-lg font-semibold text-foreground">Ready to recover this revenue?</h3>
+              <p className="text-sm text-foreground/70">Provide your contact information and we will reach out within 24 hours to book your strategy call.</p>
               <form onSubmit={handleSubmit} className="space-y-3">
                 {/* First Name */}
                 <div className="space-y-2">
