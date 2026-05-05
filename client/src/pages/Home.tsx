@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, PhoneOff, MessageSquare, Calendar, BarChart3, Clock } from "lucide-react";
 import LeadQualificationForm from "@/components/LeadQualificationForm";
+import logoHorizontal from "@/assets/images/Dolphens-digital-logo-horizontal.png";
 
 export default function Home() {
   const [formOpen, setFormOpen] = useState(false);
@@ -11,7 +12,13 @@ export default function Home() {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="container flex items-center justify-between py-4">
-          <div className="text-2xl font-bold text-primary">Dolphens Digital</div>
+          <a href="/" className="flex items-center">
+            <img
+              src={logoHorizontal}
+              alt="Dolphens Digital"
+              className="h-10 md:h-12 w-auto object-contain"
+            />
+          </a>
           <div className="hidden md:flex gap-8">
             <a href="#problem" className="text-foreground hover:text-primary transition">
               Problem
