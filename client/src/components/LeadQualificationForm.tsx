@@ -104,12 +104,22 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
     setIsSubmitting(true);
 
     try {
-      // Simulate API call - in production, this would send to your backend
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Prepare email content
+      const emailSubject = `New Lead: ${formData.businessName} - ${formData.businessType}`;
+      const emailBody = `
+New Lead Submission from Dolphens Digital\n\n=== BUSINESS INFO ===\nBusiness Name: ${formData.businessName}\nBusiness Type: ${formData.businessType}\nMonthly Call Volume: ${formData.monthlyCallVolume}\n\n=== CONTACT INFO ===\nName: ${formData.firstName} ${formData.lastName}\nEmail: ${formData.email}\nPhone: ${formData.phone}\n\n=== PROFIT AUDIT RESULTS ===\nIndustry Miss Rate: ${calculation?.industryMissRate}%\nUser Perceived Miss Rate: ${calculation?.userMissRate}%\nAverage Service Value: $${calculation?.avgServiceValue}\n\nIndustry Scenario (${calculation?.industryMissRate}% miss rate):\n- Monthly Loss: $${calculation?.industryMonthlyLoss.toFixed(0)}\n- Annual Loss: $${calculation?.industryAnnualLoss.toFixed(0)}\n- Potential Recovery: $${calculation?.industryPotentialRecovery.toFixed(0)}\n\nUser Perceived Scenario (${calculation?.userMissRate}% miss rate):\n- Monthly Loss: $${calculation?.userMonthlyLoss.toFixed(0)}\n- Annual Loss: $${calculation?.userAnnualLoss.toFixed(0)}\n- Potential Recovery: $${calculation?.userPotentialRecovery.toFixed(0)}\n\n=== NEXT STEPS ===\nReach out to ${formData.firstName} at ${formData.phone} or ${formData.email} to book the 15-minute strategy call.\n`;
       
-      // Log the form data (in production, send to backend/CRM)
+      // Send email via mailto (user's email client) - in production, this would use a backend API
+      const mailtoLink = `mailto:hello@dolphensdigital.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+      
+      // Log the form data for debugging
       console.log("Lead captured:", formData);
       console.log("Calculation:", calculation);
+      console.log("Email content:", emailBody);
+      
+      // In production, you would send this via a backend API instead
+      // For now, we'll simulate the email being sent
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       setIsSuccess(true);
       

@@ -136,27 +136,18 @@ export default function ProfitAuditResults({ calculation, onBookCall, calendlyUr
       </Card>
 
       {/* CTA */}
-      <div className="space-y-3 pt-4">
+      <div className="space-y-3 pt-4 bg-primary/5 rounded-lg p-4 border border-primary/20">
+        <p className="text-sm font-semibold text-primary mb-2">Ready to recover this revenue?</p>
         <Button
           size="lg"
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 rounded-lg"
           onClick={onBookCall}
         >
-          Book Your 15-Minute Strategy Call
+          Continue to Contact Form
         </Button>
         <p className="text-xs text-center text-foreground/60">
-          Let's discuss how to implement this recovery plan for your business.
+          Provide your contact info and we will reach out within 24 hours to book your strategy call.
         </p>
-        {calendlyUrl && (
-          <a
-            href={calendlyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-center text-primary hover:underline block"
-          >
-            Or schedule directly →
-          </a>
-        )}
       </div>
     </div>
   );
