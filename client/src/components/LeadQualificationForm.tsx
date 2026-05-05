@@ -1,4 +1,5 @@
 import { useState } from "react";
+import emailjs from "@emailjs/browser";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, CheckCircle2, ArrowRight } from "lucide-react";
 import { calculateProfitLoss, INDUSTRY_BENCHMARKS, ProfitCalculation } from "@/lib/profitCalculator";
 import ProfitAuditResults from "./ProfitAuditResults";
+
+// Initialize EmailJS
+emailjs.init("vzUBNcpgVzMCogBrI");
 
 interface LeadQualificationFormProps {
   open: boolean;
@@ -28,56 +32,38 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
   const [isSuccess, setIsSuccess] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [calculation, setCalculation] = useState<ProfitCalculation | null>(null);
-  const [userMissRate, setUserMissRate] = useState<string>("");
-
-  const businessTypes = [
-    "Plumbing",
-    "HVAC",
-    "Electrical",
-    "Roofing",
-    "Dental",
-    "Law Firm",
-    "Real Estate",
-    "Home Services",
-    "Other"
-  ];
-
-  const callVolumes = [
-    "Less than 10",
-    "10-25",
-    "25-50",
-    "50-100",
-    "100+"
-  ];
+  const [userMissRate, setUserMissRate] = useState("");
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleBusinessTypeChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      businessType: value
+    }));
   };
 
   const handleShowCalculator = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate required fields for calculator
-    if (!formData.businessType || !formData.monthlyCallVolume) {
-      alert("Please select your business type and estimated monthly calls");
+
+    // Validate required fields
+    if (!formData.businessName || !formData.businessType || !formData.monthlyCallVolume) {
+      alert("Please fill in all business information fields");
       return;
     }
 
-    // Get the numeric call volume
-    const callVolumeMap: Record<string, number> = {
-      "Less than 10": 10,
-      "10-25": 17,
-      "25-50": 37,
-      "50-100": 75,
-      "100+": 150
-    };
+    const estimatedCalls = parseInt(formData.monthlyCallVolume);
+    if (isNaN(estimatedCalls) || estimatedCalls <= 0) {
+      alert("Please enter a valid number for monthly calls");
+      return;
+    }
 
-    const estimatedCalls = callVolumeMap[formData.monthlyCallVolume] || 50;
     const missRate = userMissRate ? parseInt(userMissRate) : 50; // Default to 50% if not provided
 
     // Calculate profit loss
@@ -104,22 +90,31 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
     setIsSubmitting(true);
 
     try {
-      // Prepare email content
-      const emailSubject = `New Lead: ${formData.businessName} - ${formData.businessType}`;
-      const emailBody = `
-New Lead Submission from Dolphens Digital\n\n=== BUSINESS INFO ===\nBusiness Name: ${formData.businessName}\nBusiness Type: ${formData.businessType}\nMonthly Call Volume: ${formData.monthlyCallVolume}\n\n=== CONTACT INFO ===\nName: ${formData.firstName} ${formData.lastName}\nEmail: ${formData.email}\nPhone: ${formData.phone}\n\n=== PROFIT AUDIT RESULTS ===\nIndustry Miss Rate: ${calculation?.industryMissRate}%\nUser Perceived Miss Rate: ${calculation?.userMissRate}%\nAverage Service Value: $${calculation?.avgServiceValue}\n\nIndustry Scenario (${calculation?.industryMissRate}% miss rate):\n- Monthly Loss: $${calculation?.industryMonthlyLoss.toFixed(0)}\n- Annual Loss: $${calculation?.industryAnnualLoss.toFixed(0)}\n- Potential Recovery: $${calculation?.industryPotentialRecovery.toFixed(0)}\n\nUser Perceived Scenario (${calculation?.userMissRate}% miss rate):\n- Monthly Loss: $${calculation?.userMonthlyLoss.toFixed(0)}\n- Annual Loss: $${calculation?.userAnnualLoss.toFixed(0)}\n- Potential Recovery: $${calculation?.userPotentialRecovery.toFixed(0)}\n\n=== NEXT STEPS ===\nReach out to ${formData.firstName} at ${formData.phone} or ${formData.email} to book the 15-minute strategy call.\n`;
+      // Prepare email parameters for EmailJS
+      const templateParams = {
+        to_email: "hello@dolphensdigital.com",
+        business_name: formData.businessName,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        business_type: formData.businessType,
+        monthly_calls: formData.monthlyCallVolume,
+        industry_miss_rate: calculation?.industryMissRate || 0,
+        user_miss_rate: calculation?.userMissRate || 0,
+        industry_monthly_loss: calculation?.industryMonthlyLoss.toFixed(0) || 0,
+        industry_annual_loss: calculation?.industryAnnualLoss.toFixed(0) || 0,
+        user_monthly_loss: calculation?.userMonthlyLoss.toFixed(0) || 0,
+        user_annual_loss: calculation?.userAnnualLoss.toFixed(0) || 0,
+        potential_recovery: calculation?.industryPotentialRecovery.toFixed(0) || 0,
+        name: `${formData.firstName} ${formData.lastName}`
+      };
+
+      // Send email using EmailJS
+      await emailjs.send("service_default", "template_8m9ghvh", templateParams);
       
-      // Send email via mailto (user's email client) - in production, this would use a backend API
-      const mailtoLink = `mailto:hello@dolphensdigital.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-      
-      // Log the form data for debugging
-      console.log("Lead captured:", formData);
+      console.log("Lead captured and email sent:", formData);
       console.log("Calculation:", calculation);
-      console.log("Email content:", emailBody);
-      
-      // In production, you would send this via a backend API instead
-      // For now, we'll simulate the email being sent
-      await new Promise(resolve => setTimeout(resolve, 1500));
       
       setIsSuccess(true);
       
@@ -141,8 +136,8 @@ New Lead Submission from Dolphens Digital\n\n=== BUSINESS INFO ===\nBusiness Nam
         onOpenChange(false);
       }, 3000);
     } catch (error) {
-      console.error("Error submitting form:", error);
-      alert("An error occurred. Please try again.");
+      console.error("Error sending email:", error);
+      alert("Failed to submit. Please try again.");
       setIsSubmitting(false);
     }
   };
@@ -181,13 +176,15 @@ New Lead Submission from Dolphens Digital\n\n=== BUSINESS INFO ===\nBusiness Nam
                 <Label htmlFor="businessType" className="text-sm font-medium">
                   Business Type *
                 </Label>
-                <Select value={formData.businessType} onValueChange={(value) => handleSelectChange("businessType", value)} disabled={isSubmitting}>
+                <Select value={formData.businessType} onValueChange={handleBusinessTypeChange} disabled={isSubmitting}>
                   <SelectTrigger className="border-border">
-                    <SelectValue placeholder="Select your industry" />
+                    <SelectValue placeholder="Select your business type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {businessTypes.map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    {Object.keys(INDUSTRY_BENCHMARKS).map((key) => (
+                      <SelectItem key={key} value={INDUSTRY_BENCHMARKS[key as keyof typeof INDUSTRY_BENCHMARKS].name}>
+                        {INDUSTRY_BENCHMARKS[key as keyof typeof INDUSTRY_BENCHMARKS].name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -198,30 +195,30 @@ New Lead Submission from Dolphens Digital\n\n=== BUSINESS INFO ===\nBusiness Nam
                 <Label htmlFor="monthlyCallVolume" className="text-sm font-medium">
                   Estimated Monthly Calls *
                 </Label>
-                <Select value={formData.monthlyCallVolume} onValueChange={(value) => handleSelectChange("monthlyCallVolume", value)} disabled={isSubmitting}>
-                  <SelectTrigger className="border-border">
-                    <SelectValue placeholder="Select call volume" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {callVolumes.map(volume => (
-                      <SelectItem key={volume} value={volume}>{volume}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input
+                  id="monthlyCallVolume"
+                  name="monthlyCallVolume"
+                  type="number"
+                  placeholder="e.g., 150"
+                  value={formData.monthlyCallVolume}
+                  onChange={handleInputChange}
+                  disabled={isSubmitting}
+                  className="border-border"
+                />
               </div>
 
-              {/* Perceived Missed Call Rate */}
+              {/* User's Perceived Miss Rate */}
               <div className="space-y-2">
-                <Label htmlFor="missRate" className="text-sm font-medium">
-                  Your Perceived Missed Call Rate (%)
+                <Label htmlFor="userMissRate" className="text-sm font-medium">
+                  Your Perceived Miss Rate (Optional)
                 </Label>
-                <div className="flex gap-2 items-end">
+                <div className="flex gap-2">
                   <Input
-                    id="missRate"
+                    id="userMissRate"
                     type="number"
                     min="0"
                     max="100"
-                    placeholder="e.g., 50"
+                    placeholder="e.g., 45"
                     value={userMissRate}
                     onChange={(e) => setUserMissRate(e.target.value)}
                     disabled={isSubmitting}
@@ -316,7 +313,7 @@ New Lead Submission from Dolphens Digital\n\n=== BUSINESS INFO ===\nBusiness Nam
                 {/* Phone */}
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="text-sm font-medium">
-                    Phone Number *
+                    Phone *
                   </Label>
                   <Input
                     id="phone"
@@ -330,15 +327,16 @@ New Lead Submission from Dolphens Digital\n\n=== BUSINESS INFO ===\nBusiness Nam
                   />
                 </div>
 
+                {/* Submit Button */}
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2 rounded-lg"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2 rounded-lg flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Booking Your Call...
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Submitting...
                     </>
                   ) : (
                     "Confirm & Book My Strategy Call"
@@ -350,12 +348,12 @@ New Lead Submission from Dolphens Digital\n\n=== BUSINESS INFO ===\nBusiness Nam
         ) : isSuccess ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-4">
             <CheckCircle2 className="w-16 h-16 text-primary" />
-            <h3 className="text-xl font-bold text-center">Call Booked!</h3>
+            <h3 className="text-2xl font-bold text-foreground">Success!</h3>
             <p className="text-center text-foreground/70">
-              Check your email for calendar confirmation and meeting details.
+              We've received your information and sent you a confirmation email. We'll reach out within 24 hours to book your 15-minute strategy call.
             </p>
             <p className="text-sm text-foreground/60 text-center">
-              We're excited to help you recover that lost revenue!
+              Check your email at <span className="font-semibold">{formData.email}</span>
             </p>
           </div>
         ) : null}
