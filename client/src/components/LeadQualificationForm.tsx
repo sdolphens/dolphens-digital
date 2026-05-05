@@ -4,7 +4,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, ArrowRight } from "lucide-react";
+import { calculateProfitLoss, INDUSTRY_BENCHMARKS, ProfitCalculation } from "@/lib/profitCalculator";
+import ProfitAuditResults from "./ProfitAuditResults";
 
 interface LeadQualificationFormProps {
   open: boolean;
@@ -24,18 +26,18 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [calculation, setCalculation] = useState<ProfitCalculation | null>(null);
+  const [userMissRate, setUserMissRate] = useState<string>("");
 
   const businessTypes = [
     "Plumbing",
     "HVAC",
     "Electrical",
     "Roofing",
-    "Landscaping",
     "Dental",
-    "Medical",
     "Law Firm",
     "Real Estate",
-    "Solar",
     "Home Services",
     "Other"
   ];
@@ -57,6 +59,39 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleShowCalculator = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate required fields for calculator
+    if (!formData.businessType || !formData.monthlyCallVolume) {
+      alert("Please select your business type and estimated monthly calls");
+      return;
+    }
+
+    // Get the numeric call volume
+    const callVolumeMap: Record<string, number> = {
+      "Less than 10": 10,
+      "10-25": 17,
+      "25-50": 37,
+      "50-100": 75,
+      "100+": 150
+    };
+
+    const estimatedCalls = callVolumeMap[formData.monthlyCallVolume] || 50;
+    const missRate = userMissRate ? parseInt(userMissRate) : 50; // Default to 50% if not provided
+
+    // Calculate profit loss
+    const businessTypeKey = formData.businessType.toLowerCase().replace(/\s+/g, "");
+    const result = calculateProfitLoss(businessTypeKey, estimatedCalls, missRate);
+
+    if (result) {
+      setCalculation(result);
+      setShowCalculator(true);
+    } else {
+      alert("Unable to calculate. Please check your inputs.");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -74,6 +109,7 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
       
       // Log the form data (in production, send to backend/CRM)
       console.log("Lead captured:", formData);
+      console.log("Calculation:", calculation);
       
       setIsSuccess(true);
       
@@ -89,6 +125,9 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
           phone: "",
           monthlyCallVolume: ""
         });
+        setShowCalculator(false);
+        setCalculation(null);
+        setUserMissRate("");
         onOpenChange(false);
       }, 3000);
     } catch (error) {
@@ -100,8 +139,8 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        {!isSuccess ? (
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        {!showCalculator && !isSuccess ? (
           <>
             <DialogHeader>
               <DialogTitle className="text-2xl">Get Your Free AI Profit Audit</DialogTitle>
@@ -110,7 +149,7 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleShowCalculator} className="space-y-4">
               {/* Business Name */}
               <div className="space-y-2">
                 <Label htmlFor="businessName" className="text-sm font-medium">
@@ -144,76 +183,10 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
                 </Select>
               </div>
 
-              {/* First Name */}
-              <div className="space-y-2">
-                <Label htmlFor="firstName" className="text-sm font-medium">
-                  First Name *
-                </Label>
-                <Input
-                  id="firstName"
-                  name="firstName"
-                  placeholder="John"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  disabled={isSubmitting}
-                  className="border-border"
-                />
-              </div>
-
-              {/* Last Name */}
-              <div className="space-y-2">
-                <Label htmlFor="lastName" className="text-sm font-medium">
-                  Last Name *
-                </Label>
-                <Input
-                  id="lastName"
-                  name="lastName"
-                  placeholder="Doe"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  disabled={isSubmitting}
-                  className="border-border"
-                />
-              </div>
-
-              {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">
-                  Email *
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="john@example.com"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  disabled={isSubmitting}
-                  className="border-border"
-                />
-              </div>
-
-              {/* Phone */}
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm font-medium">
-                  Phone Number *
-                </Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  placeholder="(555) 123-4567"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  disabled={isSubmitting}
-                  className="border-border"
-                />
-              </div>
-
               {/* Monthly Call Volume */}
               <div className="space-y-2">
                 <Label htmlFor="monthlyCallVolume" className="text-sm font-medium">
-                  Estimated Monthly Calls
+                  Estimated Monthly Calls *
                 </Label>
                 <Select value={formData.monthlyCallVolume} onValueChange={(value) => handleSelectChange("monthlyCallVolume", value)} disabled={isSubmitting}>
                   <SelectTrigger className="border-border">
@@ -227,39 +200,163 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
                 </Select>
               </div>
 
-              {/* Submit Button */}
+              {/* Perceived Missed Call Rate */}
+              <div className="space-y-2">
+                <Label htmlFor="missRate" className="text-sm font-medium">
+                  Your Perceived Missed Call Rate (%)
+                </Label>
+                <div className="flex gap-2 items-end">
+                  <Input
+                    id="missRate"
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="e.g., 50"
+                    value={userMissRate}
+                    onChange={(e) => setUserMissRate(e.target.value)}
+                    disabled={isSubmitting}
+                    className="border-border flex-1"
+                  />
+                  <span className="text-sm text-foreground/60 pb-2">%</span>
+                </div>
+                <p className="text-xs text-foreground/60">
+                  Leave blank to use industry average
+                </p>
+              </div>
+
+              {/* Next Step Button */}
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2 rounded-lg"
+                className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold py-2 rounded-lg flex items-center justify-center gap-2"
               >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Get My Free Audit"
-                )}
+                See Your Profit Audit <ArrowRight className="w-4 h-4" />
               </Button>
 
               <p className="text-xs text-foreground/60 text-center">
-                We'll send your personalized audit to your email within 24 hours.
+                Next: See your personalized profit loss calculation
               </p>
             </form>
           </>
-        ) : (
+        ) : showCalculator && calculation ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Your Profit Audit Results</DialogTitle>
+              <DialogDescription>
+                See how much revenue you're leaving on the table
+              </DialogDescription>
+            </DialogHeader>
+            <ProfitAuditResults
+              calculation={calculation}
+              onBookCall={() => {
+                // Move to booking step
+                setShowCalculator(false);
+              }}
+            />
+            <div className="mt-6 pt-6 border-t border-border space-y-3">
+              <Button
+                onClick={handleShowCalculator}
+                variant="outline"
+                className="w-full"
+              >
+                Back to Edit
+              </Button>
+              <form onSubmit={handleSubmit} className="space-y-3">
+                {/* First Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="firstName" className="text-sm font-medium">
+                    First Name *
+                  </Label>
+                  <Input
+                    id="firstName"
+                    name="firstName"
+                    placeholder="John"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    disabled={isSubmitting}
+                    className="border-border"
+                  />
+                </div>
+
+                {/* Last Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="lastName" className="text-sm font-medium">
+                    Last Name *
+                  </Label>
+                  <Input
+                    id="lastName"
+                    name="lastName"
+                    placeholder="Doe"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    disabled={isSubmitting}
+                    className="border-border"
+                  />
+                </div>
+
+                {/* Email */}
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium">
+                    Email *
+                  </Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="john@example.com"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    disabled={isSubmitting}
+                    className="border-border"
+                  />
+                </div>
+
+                {/* Phone */}
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-medium">
+                    Phone Number *
+                  </Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    placeholder="(555) 123-4567"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    disabled={isSubmitting}
+                    className="border-border"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2 rounded-lg"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Booking Your Call...
+                    </>
+                  ) : (
+                    "Confirm & Book My Strategy Call"
+                  )}
+                </Button>
+              </form>
+            </div>
+          </>
+        ) : isSuccess ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-4">
             <CheckCircle2 className="w-16 h-16 text-primary" />
-            <h3 className="text-xl font-bold text-center">Thank You!</h3>
+            <h3 className="text-xl font-bold text-center">Call Booked!</h3>
             <p className="text-center text-foreground/70">
-              Your free AI Profit Audit is on the way. Check your email shortly.
+              Check your email for calendar confirmation and meeting details.
             </p>
             <p className="text-sm text-foreground/60 text-center">
-              We'll be in touch within 24 hours with your personalized analysis.
+              We're excited to help you recover that lost revenue!
             </p>
           </div>
-        )}
+        ) : null}
       </DialogContent>
     </Dialog>
   );
