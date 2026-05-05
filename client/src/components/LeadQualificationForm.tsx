@@ -123,15 +123,22 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
       };
 
       // Send email using EmailJS
-      await emailjs.send("service_grl2sp8", "template_8m9ghvh", templateParams);
+      try {
+        const response = await emailjs.send("service_grl2sp8", "template_8m9ghvh", templateParams);
+        console.log("EmailJS response:", response);
+      } catch (emailError) {
+        console.error("EmailJS error:", emailError);
+      }
       
       console.log("Lead captured and email sent:", formData);
       console.log("Calculation:", calculation);
       
       setIsSuccess(true);
+      console.log("Success state set to true");
       
       // Reset after 5 seconds (gives users time to see success message)
       setTimeout(() => {
+        console.log("Resetting form after success");
         setIsSuccess(false);
         setFormData({
           businessName: "",
@@ -145,12 +152,14 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
         setShowCalculator(false);
         setCalculation(null);
         setUserMissRate("");
+        setIsSubmitting(false);
         onOpenChange(false);
       }, 5000);
     } catch (error) {
       console.error("Error sending email:", error);
       alert("Failed to submit. Please try again.");
       setIsSubmitting(false);
+      setIsSuccess(false);
     }
   };
 
