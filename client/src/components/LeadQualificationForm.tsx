@@ -111,7 +111,7 @@ export default function LeadQualificationForm({ open, onOpenChange }: LeadQualif
       };
 
       // Send email using EmailJS
-      await emailjs.send("service_default", "template_8m9ghvh", templateParams);
+      await emailjs.send("service_grl2sp8", "template_8m9ghvh", templateParams);
       
       console.log("Lead captured and email sent:", formData);
       console.log("Calculation:", calculation);
